@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Birdie Colors - Juego de Memoria Sonora</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --panel-bg: rgba(22, 30, 49, 0.75);
+      --accent: #a855f7;
+      --accent-glow: rgba(168, 85, 247, 0.4);
+      --danger: #ef4444;
+      --text: #f8fafc;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Outfit', system-ui, sans-serif;
+      background-color: var(--bg-color);
+      background-image: 
+        radial-gradient(circle at 50% 10%, rgba(168, 85, 247, 0.2) 0%, transparent 60%),
+        radial-gradient(circle at 80% 80%, rgba(124, 58, 237, 0.15) 0%, transparent 50%);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px 10px;
+      overflow-x: hidden;
+    }
+
+    .game-container {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+
+    header {
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 0%, #c084fc 50%, #e879f9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    }
+
+    p.instructions {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+
+    .hud-panel {
+      width: 100%;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+
+    .hud-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .hud-label {
+      font-size: 0.75rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    .hud-value {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #f8fafc;
+    }
+
+    .btn-action {
+      background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
+      color: #fff;
+      border: none;
+      padding: 10px 24px;
+      font-size: 1rem;
+      font-weight: 800;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px var(--accent-glow);
+      transition: all 0.2s ease;
+    }
+
+    .btn-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    .btn-action:disabled {
+      background: #334155;
+      color: #64748b;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .timer-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .timer-bar {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #a855f7, #e879f9);
+      transition: width 0.1s linear;
+    }
+
+    .viewport {
+      position: relative;
+      width: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      box-shadow: inset 0 0 40px rgba(0,0,0,0.6), 0 12px 32px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 420px;
+    }
+
+    /* Modal de Victoria */
+    .victory-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(11, 15, 25, 0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      z-index: 10;
+    }
+
+    .victory-card {
+      background: rgba(30, 41, 59, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 30px;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    }
+
+    .victory-card h2 {
+      font-size: 2rem;
+      color: #f8fafc;
+      margin-bottom: 8px;
+    }
+
+    .victory-card p {
+      color: #94a3b8;
+      margin-bottom: 20px;
+    }
+
+    .mobile-controls {
+      display: none;
+      width: 100%;
+      gap: 10px;
+    }
+
+    .mobile-btn {
+      flex: 1;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: white;
+      font-weight: bold;
+      border-radius: 12px;
+      font-size: 1.2rem;
+      text-align: center;
+      touch-action: manipulation;
+    }
+
+    .mobile-btn:active {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    @media (max-width: 600px) {
+      .mobile-controls {
+        display: flex;
+      }
+      canvas {
+        height: 380px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-container">
+    <header>
+      <h1>🪶 Birdie Colors</h1>
+      <p class="instructions">¡Guíate únicamente por el sonido para acertarle a la pelota correcta!</p>
+    </header>
+
+    <div class="hud-panel">
+      <div class="hud-badge">
+        <span class="hud-label">Estado</span>
+        <span class="hud-value" id="gameStatus">Modo Exploración</span>
+      </div>
+      
+      <div class="hud-badge">
+        <span class="hud-label">Puntaje</span>
+        <span class="hud-value" id="scoreText">0 / 5</span>
+      </div>
+
+      <button id="btnStart" class="btn-action">Iniciar Juego</button>
+    </div>
+
+    <div class="timer-bar-container">
+      <div class="timer-bar" id="timerBar"></div>
+    </div>
+
+    <div class="viewport">
+      <div class="victory-overlay" id="victoryOverlay">
+        <div class="victory-card">
+          <h2>🏆 ¡Ganaste!</h2>
+          <p>Has alcanzado la meta de 5 puntos.</p>
+          <button id="btnRestart" class="btn-action">Jugar de Nuevo</button>
+        </div>
+      </div>
+      <canvas id="gameCanvas" width="640" height="420"></canvas>
+    </div>
+
+    <div class="mobile-controls">
+      <div class="mobile-btn" id="btnLeft">◄</div>
+      <div class="mobile-btn" id="btnFire">🥚 Disparar</div>
+      <div class="mobile-btn" id="btnRight">►</div>
+    </div>
+  </div>
+
+  <script>
+    const sonidos = {
+      rojo: 'audios/rojo.mp3',
+      negro: 'audios/negro.mp3',
+      amarillo: 'audios/amarillo.mp3',
+      blanco: 'audios/blanco.mp3',
+      rosado: 'audios/rosado.mp3',
+      celeste: 'audios/celeste.mp3'
+    };
+
+    const frecuencias = {
+      rojo: 261.63, negro: 293.66, amarillo: 329.63,
+      blanco: 349.23, rosado: 392.00, celeste: 440.00
+    };
+
+    const palette = {
+      rojo: '#ef4444',
+      negro: '#334155',
+      amarillo: '#eab308',
+      blanco: '#f8fafc',
+      rosado: '#ec4899',
+      celeste: '#0ea5e9'
+    };
+
+    let audioCtx = null;
+    const audioBuffers = {};
+
+    function initAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    async function cargarAudios() {
+      for (let color in sonidos) {
+        try {
+          const res = await fetch(sonidos[color]);
+          if (res.ok) {
+            const buffer = await res.arrayBuffer();
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            audioBuffers[color] = await audioCtx.decodeAudioData(buffer);
+          }
+        } catch (e) {}
+      }
+    }
+    cargarAudios();
+
+    function reproducirSonido(color) {
+      initAudioContext();
+      if (audioBuffers[color]) {
+        const source = audioCtx.createBufferSource();
+        source.buffer = audioBuffers[color];
+        source.connect(audioCtx.destination);
+        source.start(0);
+      } else {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.value = frecuencias[color];
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.5);
+      }
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let modoJuego = false;
+    let colorObjetivo = null;
+    let puntos = 0;
+    const META_PUNTOS = 5;
+    let tiempoRestante = 10;
+    let intervaloTiempo = null;
+    let escuchandoInteraccion = true;
+
+    const bird = {
+      x: canvas.width / 2,
+      y: canvas.height - 50,
+      radius: 22,
+      speed: 7
+    };
+
+    let eggs = [];
+    let particles = [];
+    let targets = [];
+
+    const keys = { left: false, right: false };
+
+    function inicializarObjetivos() {
+      targets = [];
+      const keysColores = Object.keys(palette);
+
+      keysColores.forEach((colorKey) => {
+        targets.push({
+          id: colorKey,
+          x: Math.random() * (canvas.width - 120) + 60,
+          y: Math.random() * 140 + 50,
+          radius: 26,
+          vx: (Math.random() - 0.5) * 4.5 || 2,
+          vy: (Math.random() - 0.5) * 2.5 || 1,
+          color: palette[colorKey],
+          highlight: false,
+          wrong: false
+        });
+      });
+    }
+
+    function reubicarPelotas() {
+      targets.forEach(t => {
+        t.x = Math.random() * (canvas.width - 120) + 60;
+        t.y = Math.random() * 140 + 50;
+        t.vx = (Math.random() - 0.5) * 5 || 2.5;
+        t.vy = (Math.random() - 0.5) * 2.5 || 1;
+        t.highlight = false;
+        t.wrong = false;
+      });
+    }
+
+    window.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+      if (e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        dispararHuevo();
+      }
+    });
+
+    window.addEventListener('keyup', e => {
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+    });
+
+    document.getElementById('btnLeft').addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; });
+    document.getElementById('btnLeft').addEventListener('touchend', () => keys.left = false);
+    document.getElementById('btnRight').addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
+    document.getElementById('btnRight').addEventListener('touchend', () => keys.right = false);
+    document.getElementById('btnFire').addEventListener('click', () => dispararHuevo());
+
+    function dispararHuevo() {
+      initAudioContext();
+      if (!escuchandoInteraccion) return;
+
+      eggs.push({
+        x: bird.x,
+        y: bird.y - 25,
+        vy: -9.5,
+        radius: 7
+      });
+    }
+
+    function crearParticulas(x, y, color) {
+      for (let i = 0; i < 18; i++) {
+        particles.push({
+          x: x,
+          y: y,
+          vx: (Math.random() - 0.5) * 7,
+          vy: (Math.random() - 0.5) * 7,
+          color: color,
+          alpha: 1,
+          size: Math.random() * 4 + 2
+        });
+      }
+    }
+
+    function dibujarPajarito(x, y) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.ellipse(0, 28, 18, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#6b21a8';
+      ctx.beginPath();
+      ctx.moveTo(-6, 12);
+      ctx.lineTo(-18, 28);
+      ctx.lineTo(-4, 20);
+      ctx.lineTo(0, 30);
+      ctx.lineTo(4, 20);
+      ctx.lineTo(18, 28);
+      ctx.lineTo(6, 12);
+      ctx.fill();
+
+      ctx.fillStyle = '#a855f7';
+      ctx.shadowColor = '#c084fc';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.ellipse(0, 4, 20, 22, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#e9d5ff';
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.ellipse(0, 8, 12, 14, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#9333ea';
+      ctx.beginPath();
+      ctx.arc(0, -14, 16, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#c084fc';
+      ctx.beginPath();
+      ctx.moveTo(-3, -28);
+      ctx.quadraticCurveTo(0, -38, 6, -30);
+      ctx.quadraticCurveTo(0, -26, -3, -28);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-6, -16, 5, 0, Math.PI * 2);
+      ctx.arc(6, -16, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(-5, -16, 2.5, 0, Math.PI * 2);
+      ctx.arc(7, -16, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-6, -17, 1, 0, Math.PI * 2);
+      ctx.arc(6, -17, 1, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#f97316';
+      ctx.beginPath();
+      ctx.moveTo(-4, -10);
+      ctx.lineTo(0, -3);
+      ctx.lineTo(4, -10);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#7e22ce';
+      ctx.beginPath();
+      ctx.ellipse(-18, 4, 6, 12, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(18, 4, 6, 12, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (keys.left && bird.x > 30) bird.x -= bird.speed;
+      if (keys.right && bird.x < canvas.width - 30) bird.x += bird.speed;
+
+      targets.forEach(t => {
+        t.x += t.vx;
+        t.y += t.vy;
+
+        if (t.x - t.radius < 10 || t.x + t.radius > canvas.width - 10) t.vx *= -1;
+        if (t.y - t.radius < 20 || t.y + t.radius > 220) t.vy *= -1;
+
+        ctx.save();
+        ctx.fillStyle = t.color;
+        ctx.shadowColor = t.color;
+        ctx.shadowBlur = t.highlight ? 30 : 15;
+
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+        ctx.beginPath();
+        ctx.arc(t.x - t.radius * 0.3, t.y - t.radius * 0.3, t.radius * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (t.wrong) {
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 4;
+          ctx.stroke();
+        } else if (t.highlight) {
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 4;
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      });
+
+      for (let i = eggs.length - 1; i >= 0; i--) {
+        const e = eggs[i];
+        e.y += e.vy;
+
+        ctx.save();
+        ctx.fillStyle = '#fef08a';
+        ctx.shadowColor = '#fef08a';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.ellipse(e.x, e.y, e.radius, e.radius * 1.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        targets.forEach(target => {
+          const dx = e.x - target.x;
+          const dy = e.y - target.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < e.radius + target.radius) {
+            crearParticulas(e.x, e.y, target.color);
+
+            if (!modoJuego) {
+              reproducirSonido(target.id);
+              target.highlight = true;
+              setTimeout(() => target.highlight = false, 300);
+            } else {
+              evaluarImpacto(target.id, target);
+            }
+
+            eggs.splice(i, 1);
+          }
+        });
+
+        if (e.y < 0) eggs.splice(i, 1);
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.03;
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        if (p.alpha <= 0) particles.splice(i, 1);
+      }
+
+      dibujarPajarito(bird.x, bird.y);
+
+      requestAnimationFrame(render);
+    }
+
+    const btnStart = document.getElementById('btnStart');
+    const btnRestart = document.getElementById('btnRestart');
+    const victoryOverlay = document.getElementById('victoryOverlay');
+    const gameStatus = document.getElementById('gameStatus');
+    const scoreText = document.getElementById('scoreText');
+    const timerBar = document.getElementById('timerBar');
+
+    btnStart.addEventListener('click', iniciarPartida);
+    btnRestart.addEventListener('click', iniciarPartida);
+
+    function iniciarPartida() {
+      initAudioContext();
+      victoryOverlay.style.display = 'none';
+      modoJuego = true;
+      puntos = 0;
+      scoreText.textContent = `${puntos} / ${META_PUNTOS}`;
+      btnStart.disabled = true;
+      document.querySelector('.instructions').textContent = '¡Identifica el tono y dispara a la pelota correspondiente!';
+      siguienteRonda();
+    }
+
+    function finalizarJuego() {
+      clearInterval(intervaloTiempo);
+      modoJuego = false;
+      escuchandoInteraccion = false;
+      btnStart.disabled = false;
+      gameStatus.textContent = '🏆 ¡Juego Completado!';
+      timerBar.style.width = '0%';
+      victoryOverlay.style.display = 'flex';
+    }
+
+    function siguienteRonda() {
+      if (puntos >= META_PUNTOS) {
+        finalizarJuego();
+        return;
+      }
+
+      escuchandoInteraccion = true;
+      gameStatus.textContent = '🔊 Reproduciendo...';
+      reubicarPelotas();
+
+      const coloresDisponibles = Object.keys(palette);
+      colorObjetivo = coloresDisponibles[Math.floor(Math.random() * coloresDisponibles.length)];
+
+      setTimeout(() => {
+        reproducirSonido(colorObjetivo);
+        iniciarTemporizador();
+      }, 500);
+    }
+
+    function iniciarTemporizador() {
+      tiempoRestante = 10;
+      timerBar.style.width = '100%';
+      gameStatus.textContent = '🎯 ¡Apunta y dispara!';
+
+      clearInterval(intervaloTiempo);
+
+      intervaloTiempo = setInterval(() => {
+        tiempoRestante -= 0.1;
+        const porcentaje = (tiempoRestante / 10) * 100;
+        timerBar.style.width = `${porcentaje}%`;
+
+        if (tiempoRestante <= 0) {
+          clearInterval(intervaloTiempo);
+          escuchandoInteraccion = false;
+          gameStatus.textContent = '⏰ ¡Tiempo agotado!';
+
+          const targetCorrecto = targets.find(t => t.id === colorObjetivo);
+          if (targetCorrecto) targetCorrecto.wrong = true;
+
+          setTimeout(() => {
+            if (targetCorrecto) targetCorrecto.wrong = false;
+            siguienteRonda();
+          }, 1500);
+        }
+      }, 100);
+    }
+
+    function evaluarImpacto(colorImpactado, objetivo) {
+      clearInterval(intervaloTiempo);
+      escuchandoInteraccion = false;
+
+      if (colorImpactado === colorObjetivo) {
+        puntos++;
+        scoreText.textContent = `${puntos} / ${META_PUNTOS}`;
+        gameStatus.textContent = '🎉 ¡Buen tiro!';
+        objetivo.highlight = true;
+
+        setTimeout(() => {
+          objetivo.highlight = false;
+          if (puntos >= META_PUNTOS) {
+            finalizarJuego();
+          } else {
+            siguienteRonda();
+          }
+        }, 1200);
+      } else {
+        gameStatus.textContent = '❌ ¡Fallaste!';
+        objetivo.wrong = true;
+
+        setTimeout(() => {
+          objetivo.wrong = false;
+          siguienteRonda();
+        }, 1200);
+      }
+    }
+
+    inicializarObjetivos();
+    render();
+  </script>
+</body>
+</html>
